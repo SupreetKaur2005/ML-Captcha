@@ -1,0 +1,41 @@
+2025-04-18 20:46:01,045 - INFO - Starting admin_dashboard application.
+2025-04-18 20:46:01,112 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+2025-04-18 20:46:01,113 - INFO - [33mPress CTRL+C to quit[0m
+2025-04-18 20:46:01,126 - INFO -  * Restarting with watchdog (windowsapi)
+2025-04-18 20:46:02,067 - INFO - Starting admin_dashboard application.
+2025-04-18 20:46:02,104 - WARNING -  * Debugger is active!
+2025-04-18 20:46:02,108 - INFO -  * Debugger PIN: 119-930-502
+2025-04-18 20:49:40,060 - INFO -  * Detected change in 'd:\\PersonalProjects\\CAPTCHA\\ML-Captcha\\app.py', reloading
+2025-04-18 20:49:40,061 - INFO -  * Detected change in 'd:\\PersonalProjects\\CAPTCHA\\ML-Captcha\\app.py', reloading
+2025-04-18 20:49:41,031 - INFO -  * Restarting with watchdog (windowsapi)
+2025-04-18 20:49:42,043 - INFO - Starting admin_dashboard application.
+2025-04-18 20:49:42,086 - WARNING -  * Debugger is active!
+2025-04-18 20:49:42,090 - INFO -  * Debugger PIN: 119-930-502
+2025-04-18 20:49:42,267 - INFO -  * Detected change in 'd:\\PersonalProjects\\CAPTCHA\\ML-Captcha\\app.py', reloading
+2025-04-18 20:49:42,268 - INFO -  * Detected change in 'd:\\PersonalProjects\\CAPTCHA\\ML-Captcha\\app.py', reloading
+2025-04-18 20:49:43,273 - INFO -  * Restarting with watchdog (windowsapi)
+2025-04-18 20:49:44,312 - INFO - Starting admin_dashboard application.
+2025-04-18 20:49:44,370 - WARNING -  * Debugger is active!
+2025-04-18 20:49:44,374 - INFO -  * Debugger PIN: 119-930-502
+2025-04-18 20:49:44,983 - INFO -  * Detected change in 'd:\\PersonalProjects\\CAPTCHA\\ML-Captcha\\app.py', reloading
+2025-04-18 20:49:44,984 - INFO -  * Detected change in 'd:\\PersonalProjects\\CAPTCHA\\ML-Captcha\\app.py', reloading
+2025-04-18 20:49:45,573 - INFO -  * Restarting with watchdog (windowsapi)
+2025-04-18 20:49:46,597 - INFO - Starting admin_dashboard application.
+2025-04-18 20:49:46,690 - WARNING -  * Debugger is active!
+2025-04-18 20:49:46,700 - INFO -  * Debugger PIN: 119-930-502
+2025-04-18 21:08:55,991 - INFO - Starting admin_dashboard application.
+2025-04-18 21:08:56,032 - WARNING -  * Debugger is active!
+2025-04-18 21:08:56,036 - INFO -  * Debugger PIN: 119-930-502
+2025-04-18 21:09:06,024 - INFO - Starting admin_dashboard application.
+2025-04-18 21:09:06,064 - WARNING -  * Debugger is active!
+2025-04-18 21:09:06,069 - INFO -  * Debugger PIN: 119-930-502
+2025-04-18 22:52:52,981 - INFO - Starting admin_dashboard application.
+2025-04-18 22:52:53,024 - WARNING -  * Debugger is active!
+2025-04-18 22:52:53,029 - INFO -  * Debugger PIN: 119-930-502
+2025-04-18 22:53:45,143 - INFO - Starting admin_dashboard application.
+2025-04-18 22:53:45,192 - WARNING -  * Debugger is active!
+2025-04-18 22:53:45,196 - INFO -  * Debugger PIN: 119-930-502
+2025-04-18 22:53:56,286 - INFO - Starting admin_dashboard application.
+2025-04-18 22:53:56,321 - WARNING -  * Debugger is active!
+2025-04-18 22:53:56,325 - INFO -  * Debugger PIN: 119-930-502

@@ -99,10 +99,12 @@ def load_data(file_path):
     try:
         data = pd.read_csv(file_path)
         logging.info("Data loaded successfully.")
+        data.info()  # Display dataset information after loading
         return data
     except Exception as e:
         logging.error(f"Error loading data: {e}")
         sys.exit(1)
+
 
 def preprocess_and_train(data):
     try:
