@@ -5,6 +5,6 @@ Currently work in progress===
 run app.py
 
 then
- data processing → feature extraction → data augmentation → model training.
+ data processing → data_feature_augmentation → model training.
 
 I am Ishita garg 

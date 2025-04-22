@@ -7,9 +7,3 @@ avg_acceleration
 std_acceleration
 avg_curvature
 duration_ms
-keyEvents
-clickEvents
-scrollEvents
-inputEvents
-sessionInfo
-metadata
