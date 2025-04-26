@@ -1,0 +1,16 @@
+mouse_movement_count
+mouse_total_distance
+mouse_avg_speed
+mouse_std_speed
+mouse_max_speed
+mouse_avg_acceleration
+mouse_std_acceleration
+mouse_avg_curvature
+mouse_duration_ms
+key_event_count
+key_unique_count
+key_avg_interval
+key_std_interval
+click_event_count
+click_avg_interval
+click_std_interval
