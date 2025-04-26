@@ -57,3 +57,19 @@
 2025-04-22 11:00:17,955 - INFO - Starting admin_dashboard application.
 2025-04-22 11:00:18,028 - WARNING -  * Debugger is active!
 2025-04-22 11:00:18,041 - INFO -  * Debugger PIN: 119-930-502
+2025-04-26 19:48:40,251 - INFO - Starting admin_dashboard application.
+2025-04-26 19:48:40,346 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+2025-04-26 19:48:40,346 - INFO - [33mPress CTRL+C to quit[0m
+2025-04-26 19:48:40,376 - INFO -  * Restarting with watchdog (windowsapi)
+2025-04-26 19:48:41,324 - INFO - Starting admin_dashboard application.
+2025-04-26 19:48:41,358 - WARNING -  * Debugger is active!
+2025-04-26 19:48:41,364 - INFO -  * Debugger PIN: 119-930-502
+2025-04-26 19:48:58,834 - INFO - Starting admin_dashboard application.
+2025-04-26 19:48:58,921 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+2025-04-26 19:48:58,921 - INFO - [33mPress CTRL+C to quit[0m
+2025-04-26 19:48:58,937 - INFO -  * Restarting with watchdog (windowsapi)
+2025-04-26 19:48:59,844 - INFO - Starting admin_dashboard application.
+2025-04-26 19:48:59,888 - WARNING -  * Debugger is active!
+2025-04-26 19:48:59,893 - INFO -  * Debugger PIN: 119-930-502
