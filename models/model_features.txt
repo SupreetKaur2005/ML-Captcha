@@ -14,3 +14,7 @@ key_std_interval
 click_event_count
 click_avg_interval
 click_std_interval
+mouse_path_irregularity
+click_intensity
+keystroke_efficiency
+mouse_efficiency
