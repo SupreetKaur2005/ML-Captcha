@@ -1,251 +1,146 @@
-# import os
-# import pandas as pd
-# from sklearn.model_selection import train_test_split
-# from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
-# from sklearn.preprocessing import LabelEncoder, StandardScaler
-# from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
-# from sklearn.model_selection import GridSearchCV
-# import matplotlib.pyplot as plt
-# import seaborn as sns
-# import joblib
-
-# # Step 1: Define paths using environment variables or default values
-# DATA_PATH = os.getenv("DATA_PATH", "data/processed/extracted_features.csv")
-# MODEL_DIR = os.getenv("MODEL_DIR", "models")
-# RF_MODEL_PATH = os.path.join(MODEL_DIR, "optimized_rf_classifier.pkl")
-# GB_MODEL_PATH = os.path.join(MODEL_DIR, "gradient_boosting_classifier.pkl")
-# FEATURES_PATH = os.path.join(MODEL_DIR, "model_features.txt")
-
-# # Ensure the model directory exists
-# os.makedirs(MODEL_DIR, exist_ok=True)
-
-# # Step 2: Load the extracted feature dataset
-# try:
-#     df = pd.read_csv(DATA_PATH)
-# except FileNotFoundError:
-#     raise FileNotFoundError(f"Dataset not found at {DATA_PATH}. Please verify the path.")
-
-# # Step 3: Prepare features and label
-# X = df.drop(columns=["label"])
-# y = df["label"]
-
-# # Step 4: Encode the target label ('human', 'bot') into integers
-# label_encoder = LabelEncoder()
-# y_encoded = label_encoder.fit_transform(y)  # human=0, bot=1 (or vice versa)
-
-# # Step 5: Feature scaling
-# scaler = StandardScaler()
-# X_scaled = scaler.fit_transform(X)
-
-# # Step 6: Train-test split
-# X_train, X_test, y_train, y_test = train_test_split(
-#     X_scaled, y_encoded, test_size=0.2, random_state=42, stratify=y_encoded
-# )
-
-# # Step 7: Hyperparameter tuning using GridSearchCV
-# param_grid = {
-#     "n_estimators": [100, 200, 300],
-#     "max_depth": [None, 10, 20, 30],
-#     "min_samples_split": [2, 5, 10],
-#     "min_samples_leaf": [1, 2, 4],
-# }
-# grid_search = GridSearchCV(
-#     estimator=RandomForestClassifier(random_state=42),
-#     param_grid=param_grid,
-#     cv=3,
-#     n_jobs=-1,
-#     verbose=2,
-# )
-# grid_search.fit(X_train, y_train)
-
-# best_model = grid_search.best_estimator_
-
-# # Step 8: Train a Gradient Boosting model (optional enhancement)
-# gb_model = GradientBoostingClassifier(random_state=42)
-# gb_model.fit(X_train, y_train)
-
-# # Step 9: Save the models and feature list
-# joblib.dump(best_model, RF_MODEL_PATH)
-# joblib.dump(gb_model, GB_MODEL_PATH)
-# with open(FEATURES_PATH, "w") as f:
-#     for feature in X.columns:
-#         f.write(f"{feature}\n")
-
-# print(f"✅ Models and feature list saved to {MODEL_DIR}.")
-
-# # Step 10: Make predictions and evaluate
-# y_pred_rf = best_model.predict(X_test)
-# y_pred_gb = gb_model.predict(X_test)
-
-# print("Random Forest Classifier Evaluation:")
-# print("Accuracy:", accuracy_score(y_test, y_pred_rf))
-# print("\nClassification Report:\n", classification_report(y_test, y_pred_rf, target_names=label_encoder.classes_))
-
-# print("\nGradient Boosting Classifier Evaluation:")
-# print("Accuracy:", accuracy_score(y_test, y_pred_gb))
-# print("\nClassification Report:\n", classification_report(y_test, y_pred_gb, target_names=label_encoder.classes_))
-
-# # Step 11: Confusion Matrix for both models
-# cm_rf = confusion_matrix(y_test, y_pred_rf)
-# cm_gb = confusion_matrix(y_test, y_pred_gb)
-
-# # Plot for Random Forest
-# sns.heatmap(cm_rf, annot=True, fmt='d', xticklabels=label_encoder.classes_, yticklabels=label_encoder.classes_, cmap="Blues")
-# plt.xlabel("Predicted")
-# plt.ylabel("Actual")
-# plt.title("Confusion Matrix - Random Forest")
-# plt.show()
-
-# # Plot for Gradient Boosting
-# sns.heatmap(cm_gb, annot=True, fmt='d', xticklabels=label_encoder.classes_, yticklabels=label_encoder.classes_, cmap="Greens")
-# plt.xlabel("Predicted")
-# plt.ylabel("Actual")
-# plt.title("Confusion Matrix - Gradient Boosting")
-# plt.show()
-
-
-import os
 import pandas as pd
-from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
-from sklearn.preprocessing import LabelEncoder, StandardScaler
-from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
-from sklearn.model_selection import GridSearchCV
-import joblib
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split, GridSearchCV, cross_val_predict
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import classification_report, accuracy_score
+from sklearn.pipeline import Pipeline
+from imblearn.over_sampling import SMOTE
+import joblib
 
-# Step 1: Define paths using environment variables or default values
-DATA_PATH = os.getenv("DATA_PATH", "data/processed/extracted_features.csv")
-MODEL_DIR = os.getenv("MODEL_DIR", "models")
-RF_MODEL_PATH = os.path.join(MODEL_DIR, "optimized_rf_classifier.pkl")
-GB_MODEL_PATH = os.path.join(MODEL_DIR, "gradient_boosting_classifier.pkl")
-FEATURES_PATH = os.path.join(MODEL_DIR, "model_features.txt")
+# Load the dataset
+data = pd.read_csv('data/processed/extracted_features.csv')
 
-# Ensure the model directory exists
-os.makedirs(MODEL_DIR, exist_ok=True)
+# Handle missing values
+missing_values = data.isnull().sum()
+if missing_values.sum() > 0:
+    for col in data.select_dtypes(include=['float64', 'int64']).columns:
+        if data[col].isnull().sum() > 0:
+            data[col] = data[col].fillna(data[col].median())
 
-# Step 2: Load the dataset
-try:
-    df = pd.read_csv(DATA_PATH)
-except FileNotFoundError:
-    raise FileNotFoundError(f"Dataset not found at {DATA_PATH}. Please verify the path.")
+# Encode target variable if needed
+if data['label'].dtype == 'O':
+    data['label'] = data['label'].map({'human': 0, 'bot': 1})
 
-# Step 3: Feature Engineering
-# Add new features to enhance the model
-df["mouse_path_irregularity"] = df["mouse_avg_curvature"] / df["mouse_total_distance"]
-df["click_intensity"] = df["click_event_count"] / df["mouse_duration_ms"]
-df["keystroke_efficiency"] = df["key_unique_count"] / df["key_event_count"]
-df["mouse_efficiency"] = df["mouse_total_distance"] / df["mouse_duration_ms"]
+# Separate features and target
+X = data.drop('label', axis=1)
+y = data['label']
 
-# Replace infinite or NaN values with 0 (e.g., division by zero handling)
-df.replace([np.inf, -np.inf], 0, inplace=True)
-df.fillna(0, inplace=True)
+# Correlation matrix
+correlation_matrix = X.corr()
+plt.figure(figsize=(10, 8))
+sns.heatmap(correlation_matrix, annot=False, cmap='coolwarm')
+plt.title('Feature Correlation Matrix')
+plt.tight_layout()
+plt.savefig('correlation_matrix.png')
+print("Correlation matrix saved as 'correlation_matrix.png'")
+plt.close()
 
-# Step 4: Prepare features and label
-X = df.drop(columns=["label"])
-y = df["label"]
+# Split the data
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42, stratify=y)
 
-# Step 5: Encode the target label ('human', 'bot') into integers
-label_encoder = LabelEncoder()
-y_encoded = label_encoder.fit_transform(y)  # human=0, bot=1 (or vice versa)
+# Check for class imbalance
+train_class_counts = pd.Series(y_train).value_counts()
+imbalance_ratio = min(train_class_counts) / max(train_class_counts)
 
-# Step 6: Feature scaling
-scaler = StandardScaler()
-X_scaled = scaler.fit_transform(X)
+# Create a pipeline with preprocessing and classifier
+pipeline = Pipeline([
+    ('scaler', StandardScaler()),
+    ('classifier', RandomForestClassifier(random_state=42))
+])
 
-# Step 7: Train-test split
-X_train, X_test, y_train, y_test = train_test_split(
-    X_scaled, y_encoded, test_size=0.2, random_state=42, stratify=y_encoded
-)
-
-# Step 8: Hyperparameter tuning using GridSearchCV
-param_grid = {
-    "n_estimators": [100, 200, 300],
-    "max_depth": [None, 10, 20, 30],
-    "min_samples_split": [2, 5, 10],
-    "min_samples_leaf": [1, 2, 4],
+# Define hyperparameters for grid search
+reduced_param_grid = {
+    'classifier__n_estimators': [100, 200],
+    'classifier__max_depth': [None, 20],
+    'classifier__min_samples_split': [2]
 }
-grid_search = GridSearchCV(
-    estimator=RandomForestClassifier(random_state=42),
-    param_grid=param_grid,
-    cv=3,
-    n_jobs=-1,
-    verbose=2,
-)
-grid_search.fit(X_train, y_train)
 
+grid_search = GridSearchCV(
+    pipeline, 
+    reduced_param_grid, 
+    cv=5, 
+    scoring='f1', 
+    n_jobs=-1,
+    verbose=1
+)
+
+# Apply SMOTE if there's a significant class imbalance
+if imbalance_ratio < 0.3:
+    smote = SMOTE(random_state=42)
+    X_train_resampled, y_train_resampled = smote.fit_resample(X_train, y_train)
+    grid_search.fit(X_train_resampled, y_train_resampled)
+else:
+    grid_search.fit(X_train, y_train)
+
+# Get the best model
 best_model = grid_search.best_estimator_
 
-# Step 9: Train a Gradient Boosting model (optional enhancement)
-gb_model = GradientBoostingClassifier(random_state=42)
-gb_model.fit(X_train, y_train)
+# Cross-validation predictions
+cv_predictions = cross_val_predict(best_model, X, y, cv=5)
 
-# Step 10: Save the models and feature list
-joblib.dump(best_model, RF_MODEL_PATH)
-joblib.dump(gb_model, GB_MODEL_PATH)
-with open(FEATURES_PATH, "w") as f:
-    for feature in X.columns:
-        f.write(f"{feature}\n")
+# Classification report after cross-validation
+print("\nClassification Report (Cross-Validation):")
+print(classification_report(y, cv_predictions, target_names=['human', 'bot']))
 
-print(f"✅ Models and feature list saved to {MODEL_DIR}.")
+# Save the trained model
+model_filename = 'human_bot_classifier.pkl'
+joblib.dump(best_model, model_filename)
+print(f"\nModel saved as '{model_filename}'")
 
-# Step 11: Make predictions and evaluate
-y_pred_rf = best_model.predict(X_test)
-y_pred_gb = gb_model.predict(X_test)
+# Feature importance
+feature_importance = best_model.named_steps['classifier'].feature_importances_
+feature_names = X.columns
 
-print("Random Forest Classifier Evaluation:")
-print("Accuracy:", accuracy_score(y_test, y_pred_rf))
-print("\nClassification Report:\n", classification_report(y_test, y_pred_rf, target_names=label_encoder.classes_))
+# Sort feature importances in descending order
+sorted_indices = np.argsort(feature_importance)[::-1]
+sorted_importance = feature_importance[sorted_indices]
+sorted_features = [feature_names[i] for i in sorted_indices]
 
-print("\nGradient Boosting Classifier Evaluation:")
-print("Accuracy:", accuracy_score(y_test, y_pred_gb))
-print("\nClassification Report:\n", classification_report(y_test, y_pred_gb, target_names=label_encoder.classes_))
+# Plot feature importance
+plt.figure(figsize=(12, 8))
+plt.bar(range(len(sorted_features)), sorted_importance, align='center')
+plt.xticks(range(len(sorted_features)), sorted_features, rotation=90)
+plt.title('Feature Importance')
+plt.tight_layout()
+plt.savefig('feature_importance.png')
+print("Feature importance plot saved as 'feature_importance.png'")
+plt.close()
 
+# Example of how to use the model for prediction
+def predict_human_or_bot(input_data, model=best_model):
+    """
+    Predict whether input data represents a human or bot.
 
-# Step 12: Confusion Matrix for both models with visualization
-cm_rf = confusion_matrix(y_test, y_pred_rf)  # Define cm_rf
-cm_gb = confusion_matrix(y_test, y_pred_gb)  # Ensure cm_gb is also defined
+    Parameters:
+    input_data (dict or pandas DataFrame): User interaction data
+    model: Trained classifier model
 
-def plot_confusion_matrix(cm, model_name, class_names):
-    plt.figure(figsize=(8, 6))
-    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=class_names, yticklabels=class_names)
-    plt.title(f"Confusion Matrix for {model_name}")
-    plt.xlabel("Predicted Labels")
-    plt.ylabel("True Labels")
-    plt.show()
+    Returns:
+    str: 'human' or 'bot' prediction
+    float: Probability of being a bot
+    """
+    if isinstance(input_data, dict):
+        input_data = pd.DataFrame([input_data])
+    required_features = X.columns
+    for feature in required_features:
+        if feature not in input_data.columns:
+            raise ValueError(f"Input data is missing required feature: {feature}")
+    input_data = input_data[required_features]
+    prediction = model.predict(input_data)[0]
+    probability = model.predict_proba(input_data)[0][1]
+    result = "bot" if prediction == 1 else "human"
+    return result, probability
 
-plot_confusion_matrix(cm_rf, "Random Forest Classifier", label_encoder.classes_)
-plot_confusion_matrix(cm_gb, "Gradient Boosting Classifier", label_encoder.classes_)
+# Load model function for later use
+def load_model(filename='human_bot_classifier.pkl'):
+    """Load a trained model from a file."""
+    return joblib.load(filename)
 
-# Step 13: Feature Importance Visualization for Random Forest
-def plot_feature_importance(importance, features, model_name, top_n=10):
-    importance_df = pd.DataFrame({"Feature": features, "Importance": importance})
-    importance_df = importance_df.sort_values(by="Importance", ascending=False).head(top_n)
-
-    plt.figure(figsize=(10, 6))
-    sns.barplot(x="Importance", y="Feature", data=importance_df, palette="viridis")
-    plt.title(f"Top {top_n} Important Features - {model_name}")
-    plt.xlabel("Feature Importance")
-    plt.ylabel("Feature")
-    plt.show()
-
-# Feature importance for Random Forest
-if hasattr(best_model, "feature_importances_"):
-    plot_feature_importance(best_model.feature_importances_, X.columns, "Random Forest")
-
-# Feature importance for Gradient Boosting
-if hasattr(gb_model, "feature_importances_"):
-    plot_feature_importance(gb_model.feature_importances_, X.columns, "Gradient Boosting")
-
-# Step 14: Accuracy Comparison Visualization
-models = ["Random Forest", "Gradient Boosting"]
-accuracies = [accuracy_score(y_test, y_pred_rf), accuracy_score(y_test, y_pred_gb)]
-
-plt.figure(figsize=(8, 6))
-sns.barplot(x=models, y=accuracies, palette="coolwarm")
-plt.title("Model Accuracy Comparison")
-plt.ylabel("Accuracy")
-plt.ylim(0, 1)
-plt.show()
+# Demonstrate prediction with a sample from the test set
+sample_idx = 0
+sample_input = X_test.iloc[sample_idx]
+true_label = y_test.iloc[sample_idx]
+prediction, probability = predict_human_or_bot(pd.DataFrame([sample_input]), best_model)
