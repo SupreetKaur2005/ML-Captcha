@@ -352,78 +352,65 @@
 #         subprocess.run(["python", "admin_dashboard.py"])
 
 from flask import Flask, request, jsonify, send_from_directory
+import os
 import subprocess
 import json
-import os
 from datetime import datetime
 import pandas as pd
 import numpy as np
 import joblib
-import warnings
+import logging
 
-warnings.filterwarnings('ignore')
-
+# Initialize Flask app and logging
 app = Flask(__name__)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 # Load the trained model and required features
+MODEL_PATH = "models/bot_human_classifier.pkl"
+FEATURES_PATH = "models/model_features.txt"
+RAW_DATA_DIR = "data/raw"
+
 try:
-    model = joblib.load('bot_human_classifier.pkl')
-    with open('model_features.txt', 'r') as f:
+    model = joblib.load(MODEL_PATH)
+    with open(FEATURES_PATH, "r") as f:
         required_features = [line.strip() for line in f.readlines()]
-    print("✅ Model and feature list loaded.")
+    logging.info("✅ Model and feature list loaded successfully.")
 except FileNotFoundError:
-    print("⚠️ Warning: Model not found. Running in data collection mode only.")
+    logging.warning("⚠️ Model or feature list not found. Running in data collection mode only.")
     model = None
     required_features = []
 
 # -------------------------------
-# Feature Extraction Function
+# Enhanced Feature Extraction
 # -------------------------------
 def extract_features(data):
-    mouse_data = data.get("mouseEvents", [])
-    if not mouse_data or len(mouse_data) < 2:
+    try:
+        mouse_data = data.get("mouseEvents", [])
+        if not mouse_data or len(mouse_data) < 2:
+            return {"movement_count": 0, "total_distance": 0.0, "avg_speed": 0.0}
+
+        # Extract positions and timestamps
+        positions = [(e["x"], e["y"]) for e in mouse_data]
+        timestamps = [e["timestamp"] for e in mouse_data]
+
+        # Calculate distances, speeds, and additional metrics
+        distances = [np.linalg.norm(np.array(positions[i+1]) - np.array(positions[i]))
+                     for i in range(len(positions) - 1)]
+        deltas = [(timestamps[i+1] - timestamps[i]) for i in range(len(timestamps) - 1)]
+
+        speeds = [d / t if t > 0 else 0 for d, t in zip(distances, deltas)]
+        curvatures = []  # Add curvature calculations if needed
+
         return {
-            "movement_count": 0,
-            "total_distance": 0.0,
-            "avg_speed": 0.0,
-            "std_speed": 0.0,
-            "max_speed": 0.0,
-            "avg_acceleration": 0.0,
-            "std_acceleration": 0.0,
-            "avg_curvature": 0.0,
-            "duration_ms": 0
+            "movement_count": len(mouse_data),
+            "total_distance": sum(distances),
+            "avg_speed": np.mean(speeds),
+            "max_speed": max(speeds),
+            "duration_ms": timestamps[-1] - timestamps[0],
         }
-
-    positions = [(e["x"], e["y"]) for e in mouse_data]
-    timestamps = [e["timestamp"] for e in mouse_data]
-
-    distances = [np.linalg.norm(np.array(positions[i+1]) - np.array(positions[i]))
-                 for i in range(len(positions) - 1)]
-    deltas = [(timestamps[i+1] - timestamps[i]) for i in range(len(timestamps) - 1)]
-
-    speeds = [d / t if t > 0 else 0 for d, t in zip(distances, deltas)]
-    accelerations = [speeds[i+1] - speeds[i] for i in range(len(speeds) - 1)]
-    curvatures = []
-    for i in range(1, len(positions) - 1):
-        a, b, c = np.array(positions[i - 1]), np.array(positions[i]), np.array(positions[i + 1])
-        ba = a - b
-        bc = c - b
-        angle = np.arccos(
-            np.clip(np.dot(ba, bc) / (np.linalg.norm(ba) * np.linalg.norm(bc) + 1e-6), -1.0, 1.0)
-        )
-        curvatures.append(angle)
-
-    return {
-        "movement_count": len(mouse_data),
-        "total_distance": sum(distances),
-        "avg_speed": np.mean(speeds),
-        "std_speed": np.std(speeds),
-        "max_speed": max(speeds),
-        "avg_acceleration": np.mean(accelerations),
-        "std_acceleration": np.std(accelerations),
-        "avg_curvature": np.mean(curvatures) if curvatures else 0,
-        "duration_ms": timestamps[-1] - timestamps[0]
-    }
+    except Exception as e:
+        logging.error(f"Feature extraction error: {e}")
+        return {}
 
 # -------------------------------
 # API Route: Collect & Predict
@@ -440,8 +427,8 @@ def collect_data():
     }
 
     # Save raw data
-    os.makedirs('data/raw', exist_ok=True)
-    filename = f"data/raw/{datetime.now().strftime('%Y%m%d_%H%M%S')}_{request.remote_addr}.json"
+    os.makedirs(RAW_DATA_DIR, exist_ok=True)
+    filename = f"{RAW_DATA_DIR}/{datetime.now().strftime('%Y%m%d_%H%M%S')}_{request.remote_addr}.json"
     with open(filename, 'w') as f:
         json.dump(data, f)
 
@@ -461,28 +448,29 @@ def collect_data():
             features_df = features_df[required_features]
 
             # Make prediction
-            proba = model.predict_proba(features_df)[0, 1]  # probability of bot
+            proba = model.predict_proba(features_df)[0, 1]  # Probability of bot
             prediction = 1 if proba > 0.5 else 0
 
             result = {
                 "status": "success",
                 "is_bot": bool(prediction),
                 "confidence": float(proba),
-                "challenge_required": bool(proba > 0.3)
+                "challenge_required": bool(proba > 0.3),
+                "details": "Unusual behavior detected" if prediction else "Behavior looks normal"
             }
         except Exception as e:
-            print(f"Prediction error: {e}")
+            logging.error(f"Prediction error: {e}")
             result = {
-                "status": "success",
-                "challenge_required": True,
-                "error": str(e)
+                "status": "error",
+                "message": "Prediction failed",
+                "error": str(e),
             }
     else:
         # Fallback if model is not loaded
         result = {
             "status": "success",
             "challenge_required": True,
-            "message": "Running in data collection mode"
+            "message": "Running in data collection mode",
         }
 
     return jsonify(result)
@@ -510,10 +498,7 @@ def home():
 # -------------------------------
 if __name__ == '__main__':
     try:
-        print("🚀 Starting app.py...")
+        logging.info("🚀 Starting app.py...")
         app.run(debug=True)
     except KeyboardInterrupt:
-        print("🛑 Shutting down app.py...")
-    finally:
-        print("🔁 Launching admin_dashboard.py...")
-        subprocess.run(["python", "admin_dashboard.py"])
+        logging.info("🛑 Shutting down app.py...")

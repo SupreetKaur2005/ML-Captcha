@@ -1,9 +1,0 @@
-movement_count
-total_distance
-avg_speed
-std_speed
-max_speed
-avg_acceleration
-std_acceleration
-avg_curvature
-duration_ms
